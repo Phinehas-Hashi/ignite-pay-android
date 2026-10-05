@@ -2,7 +2,7 @@
 
 Standalone Android payments app for the Spark Stack International ecosystem.
 
-## Current milestone: 0.1.0
+## Current milestone: 0.2.0
 
 The first frontend foundation is intentionally test-only: it contains no real payment processing and displays no fabricated real balance.
 
