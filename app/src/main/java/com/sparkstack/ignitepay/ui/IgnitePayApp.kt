@@ -37,7 +37,8 @@ private data class Transaction(
 private val demoTransactions = listOf(
     Transaction("Demo collection", "Today · Test mode", "+ KES 12,500", true),
     Transaction("Demo transfer", "Yesterday · Test mode", "− KES 3,200", false),
-    Transaction("Demo payment", "28 Sep · Test mode", "− KES 1,850", false)
+    Transaction("Demo payment", "28 Sep · Test mode", "− KES 1,850", false),
+    Transaction("Pending payout", "Test mode · Processing", "− KES 5,000", false, "Pending")
 )
 
 @Composable
@@ -305,7 +306,8 @@ private fun MainShell(onSignOut: () -> Unit) {
                 Modifier.padding(padding),
                 onSend = { activeFlow = PaymentFlow.Send },
                 onRequest = { activeFlow = PaymentFlow.Request },
-                onPay = { activeFlow = PaymentFlow.Pay }
+                onPay = { activeFlow = PaymentFlow.Pay },
+                onSeeAll = { selectedTab = 1 }
             )
             1 -> TransactionsScreen(Modifier.padding(padding))
             2 -> WalletScreen(Modifier.padding(padding))
@@ -319,7 +321,8 @@ private fun HomeScreen(
     modifier: Modifier = Modifier,
     onSend: () -> Unit = {},
     onRequest: () -> Unit = {},
-    onPay: () -> Unit = {}
+    onPay: () -> Unit = {},
+    onSeeAll: () -> Unit = {}
 ) {
     LazyColumn(
         modifier.fillMaxSize().padding(horizontal = 20.dp),
@@ -375,7 +378,7 @@ private fun HomeScreen(
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Recent activity", fontSize = 19.sp, fontWeight = FontWeight.Bold)
-                TextButton(onClick = {}) { Text("See all") }
+                TextButton(onClick = onSeeAll) { Text("See all") }
             }
         }
         items(demoTransactions) { TransactionRow(it) }
@@ -401,6 +404,13 @@ private fun QuickAction(
 
 @Composable
 private fun TransactionsScreen(modifier: Modifier = Modifier) {
+    var selectedFilter by rememberSaveable { mutableStateOf("All") }
+    val filteredTransactions = when (selectedFilter) {
+        "Completed" -> demoTransactions.filter { it.status == "Completed" }
+        "Pending" -> demoTransactions.filter { it.status == "Pending" }
+        else -> demoTransactions
+    }
+
     LazyColumn(
         modifier.fillMaxSize().padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -416,19 +426,35 @@ private fun TransactionsScreen(modifier: Modifier = Modifier) {
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(true, "All")
-                FilterChip(false, "Completed")
-                FilterChip(false, "Pending")
+                listOf("All", "Completed", "Pending").forEach { filter ->
+                    FilterChip(
+                        selected = selectedFilter == filter,
+                        label = filter,
+                        onClick = { selectedFilter = filter }
+                    )
+                }
             }
         }
-        items(demoTransactions) { TransactionRow(it) }
+        if (filteredTransactions.isEmpty()) {
+            item {
+                Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
+                    Text(
+                        "No $selectedFilter transactions in test mode.",
+                        modifier = Modifier.padding(20.dp),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.62f)
+                    )
+                }
+            }
+        } else {
+            items(filteredTransactions) { TransactionRow(it) }
+        }
     }
 }
 
 @Composable
-private fun FilterChip(selected: Boolean, label: String) {
+private fun FilterChip(selected: Boolean, label: String, onClick: () -> Unit) {
     AssistChip(
-        onClick = {},
+        onClick = onClick,
         label = { Text(label) },
         leadingIcon = if (selected) {
             { Icon(Icons.Outlined.Check, null, Modifier.size(16.dp)) }
