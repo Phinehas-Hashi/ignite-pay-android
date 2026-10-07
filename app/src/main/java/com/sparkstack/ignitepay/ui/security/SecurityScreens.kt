@@ -27,7 +27,7 @@ enum class SecurityDestination {
 @Composable
 fun SecurityScreen(
     destination: SecurityDestination,
-    demoPinConfigured: Boolean,
+    demoPin: String?,
     onNavigate: (SecurityDestination) -> Unit,
     onPinConfigured: (String) -> Unit,
     onSignOut: () -> Unit,
@@ -74,7 +74,7 @@ fun SecurityScreen(
             SecurityDestination.Hub -> SecurityHub(
                 modifier = Modifier.padding(padding),
                 pinConfigured = demoPinConfigured,
-                onPin = { onNavigate(if (demoPinConfigured) SecurityDestination.PinEntry else SecurityDestination.PinSetup) },
+                onPin = { onNavigate(if (demoPin != null) SecurityDestination.PinEntry else SecurityDestination.PinSetup) },
                 onBiometrics = { onNavigate(SecurityDestination.Biometrics) },
                 onDevices = { onNavigate(SecurityDestination.Devices) },
                 onActivity = { onNavigate(SecurityDestination.Activity) },
@@ -123,8 +123,11 @@ fun SecurityScreen(
                 onContinue = {
                     if (pinEntry.length !in 4..6) {
                         error = "Enter 4 to 6 digits."
-                    } else if (!demoPinConfigured) {
+                    } else if (demoPin == null) {
                         error = "No test PIN has been configured."
+                    } else if (pinEntry == demoPin) {
+                        error = null
+                        onNavigate(SecurityDestination.Hub)
                     } else {
                         error = "Incorrect test PIN."
                         attempts += 1
