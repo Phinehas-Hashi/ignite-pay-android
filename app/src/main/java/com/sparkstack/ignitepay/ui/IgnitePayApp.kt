@@ -26,6 +26,8 @@ private enum class PaymentFlow { Send, Request, Pay }
 
 private enum class PaymentStep { Recipient, Amount, Review, Processing, Result }
 
+private enum class SecurityDestination { Hub, PinSetup, PinConfirm, PinEntry, PinLocked, Biometrics, Devices, Activity, ForgotPin, SessionExpired }
+
 private data class Transaction(
     val title: String,
     val subtitle: String,
@@ -163,7 +165,7 @@ private fun WelcomeScreen(onGetStarted: () -> Unit, onLogin: () -> Unit) {
                     Icon(Icons.Outlined.ArrowForward, null)
                 }
                 Text(
-                    "Ignite Pay · Frontend preview 0.3.0",
+                    "Ignite Pay · Frontend preview 0.5.0",
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.42f),
                     fontSize = 11.sp
