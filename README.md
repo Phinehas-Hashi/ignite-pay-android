@@ -42,7 +42,7 @@ Real authentication, wallet balances, payment providers, ledgering, webhooks and
 
 
 ### 0.5.0 security foundation
-- Added test-mode PIN setup, confirmation and in-memory PIN verification.
+- Added test-mode PIN setup, confirmation, verification and change-PIN flow.
 - Added incorrect-PIN and temporary-lock states.
 - Added PIN recovery placeholder.
 - Added biometric-ready security UI without reading or storing biometric credentials.
