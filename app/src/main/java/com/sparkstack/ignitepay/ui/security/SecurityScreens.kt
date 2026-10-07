@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 enum class SecurityDestination {
-    Hub, PinSetup, PinConfirm, PinEntry, PinLocked, Biometrics, Devices, Activity, ForgotPin, SessionExpired
+    Hub, PinSetup, PinConfirm, PinEntry, ChangePin, PinLocked, Biometrics, Devices, Activity, ForgotPin, SessionExpired
 }
 
 @Composable
@@ -44,6 +44,7 @@ fun SecurityScreen(
         SecurityDestination.PinSetup -> "Create your PIN"
         SecurityDestination.PinConfirm -> "Confirm your PIN"
         SecurityDestination.PinEntry -> "Enter your PIN"
+        SecurityDestination.ChangePin -> "Verify current PIN"
         SecurityDestination.PinLocked -> "Security lock"
         SecurityDestination.Biometrics -> "Biometric unlock"
         SecurityDestination.Devices -> "Trusted devices"
@@ -137,6 +138,28 @@ fun SecurityScreen(
                 secondaryLabel = "Forgot PIN?",
                 onSecondary = { onNavigate(SecurityDestination.ForgotPin) }
             )
+            SecurityDestination.ChangePin -> SecurityPinEntry(
+                modifier = Modifier.padding(padding),
+                title = "Verify current PIN",
+                description = "Confirm the current test PIN before choosing a replacement.",
+                value = pinEntry,
+                onValueChange = { pinEntry = it; error = null },
+                buttonLabel = "Continue",
+                error = error,
+                onContinue = {
+                    if (demoPin == null) error = "No test PIN has been configured."
+                    else if (pinEntry == demoPin) {
+                        pinDraft = ""
+                        confirmPin = ""
+                        error = null
+                        onNavigate(SecurityDestination.PinSetup)
+                    } else {
+                        error = "Incorrect test PIN."
+                        attempts += 1
+                        if (attempts >= 3) onNavigate(SecurityDestination.PinLocked)
+                    }
+                }
+            )
             SecurityDestination.PinLocked -> SecurityMessageScreen(
                 modifier = Modifier.padding(padding),
                 icon = Icons.Outlined.Lock,
@@ -223,6 +246,7 @@ private fun SecurityHub(
             }
         }
         item { SecurityOption("PIN", if (pinConfigured) "Configured for this test session" else "Not configured", Icons.Outlined.Pin, onPin) }
+        if (pinConfigured) item { SecurityOption("Change PIN", "Verify the current test PIN first", Icons.Outlined.Edit, { onNavigate(SecurityDestination.ChangePin) }) }
         item { SecurityOption("Biometric unlock", "Ready for a future device-backed implementation", Icons.Outlined.Fingerprint, onBiometrics) }
         item { SecurityOption("Trusted devices", "Review device trust state", Icons.Outlined.Devices, onDevices) }
         item { SecurityOption("Security activity", "Authentication and device events", Icons.Outlined.Security, onActivity) }
