@@ -21,6 +21,10 @@ import androidx.compose.ui.unit.sp
 
 private enum class AppStage { Welcome, Login, SignUp, Home }
 
+private enum class PaymentFlow { Send, Request, Pay }
+
+private enum class PaymentStep { Recipient, Amount, Review, Processing, Result }
+
 private data class Transaction(
     val title: String,
     val subtitle: String,
@@ -158,7 +162,7 @@ Build opportunity.",
                     Icon(Icons.Outlined.ArrowForward, null)
                 }
                 Text(
-                    "Ignite Pay · Frontend preview 0.2.0",
+                    "Ignite Pay · Frontend preview 0.3.0",
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.42f),
                     fontSize = 11.sp
@@ -255,6 +259,12 @@ private fun AuthScreen(
 @Composable
 private fun MainShell(onSignOut: () -> Unit) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var activeFlow by rememberSaveable { mutableStateOf<PaymentFlow?>(null) }
+
+    if (activeFlow != null) {
+        PaymentFlowScreen(flow = activeFlow!!, onClose = { activeFlow = null })
+        return
+    }
 
     Scaffold(
         topBar = {
@@ -262,21 +272,12 @@ private fun MainShell(onSignOut: () -> Unit) {
                 title = {
                     Column {
                         Text("Ignite Pay", fontWeight = FontWeight.ExtraBold)
-                        Text(
-                            "TEST MODE",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text("TEST MODE", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     }
                 },
                 actions = {
-                    IconButton(onClick = {}) {
-                        Icon(Icons.Outlined.NotificationsNone, "Notifications")
-                    }
-                    IconButton(onClick = {}) {
-                        Icon(Icons.Outlined.Security, "Security")
-                    }
+                    IconButton(onClick = {}) { Icon(Icons.Outlined.NotificationsNone, "Notifications") }
+                    IconButton(onClick = {}) { Icon(Icons.Outlined.Security, "Security") }
                 }
             )
         },
@@ -300,7 +301,12 @@ private fun MainShell(onSignOut: () -> Unit) {
         }
     ) { padding ->
         when (selectedTab) {
-            0 -> HomeScreen(Modifier.padding(padding))
+            0 -> HomeScreen(
+                Modifier.padding(padding),
+                onSend = { activeFlow = PaymentFlow.Send },
+                onRequest = { activeFlow = PaymentFlow.Request },
+                onPay = { activeFlow = PaymentFlow.Pay }
+            )
             1 -> TransactionsScreen(Modifier.padding(padding))
             2 -> WalletScreen(Modifier.padding(padding))
             else -> ProfileScreen(Modifier.padding(padding), onSignOut)
@@ -309,7 +315,12 @@ private fun MainShell(onSignOut: () -> Unit) {
 }
 
 @Composable
-private fun HomeScreen(modifier: Modifier = Modifier) {
+private fun HomeScreen(
+    modifier: Modifier = Modifier,
+    onSend: () -> Unit = {},
+    onRequest: () -> Unit = {},
+    onPay: () -> Unit = {}
+) {
     LazyColumn(
         modifier.fillMaxSize().padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -321,89 +332,48 @@ private fun HomeScreen(modifier: Modifier = Modifier) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Column(Modifier.padding(22.dp)) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            "Available balance",
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.72f)
-                        )
-                        Icon(
-                            Icons.Outlined.AccountBalanceWallet,
-                            null,
-                            tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                        )
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Available balance", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.72f))
+                        Icon(Icons.Outlined.AccountBalanceWallet, null, tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
                     }
                     Spacer(Modifier.height(6.dp))
-                    Text(
-                        "KES 0.00",
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
+                    Text("KES 0.00", fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onPrimary)
                     Spacer(Modifier.height(12.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text(
-                            "TEST MODE · NO REAL FUNDS",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
+                    Surface(color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f), shape = RoundedCornerShape(10.dp)) {
+                        Text("TEST MODE · NO REAL FUNDS", modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
             }
         }
         item {
-            Text("Quick actions", fontSize = 19.sp, fontWeight = FontWeight.Bold)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Quick actions", fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                Text("TEST MODE", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            }
         }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                QuickAction("Send", Icons.Outlined.ArrowUpward, Modifier.weight(1f))
-                QuickAction("Request", Icons.Outlined.ArrowDownward, Modifier.weight(1f))
-                QuickAction("Pay", Icons.Outlined.QrCode2, Modifier.weight(1f))
-                QuickAction("More", Icons.Outlined.MoreHoriz, Modifier.weight(1f))
+                QuickAction("Send", Icons.Outlined.ArrowUpward, Modifier.weight(1f), onSend)
+                QuickAction("Request", Icons.Outlined.ArrowDownward, Modifier.weight(1f), onRequest)
+                QuickAction("Pay", Icons.Outlined.QrCode2, Modifier.weight(1f), onPay)
+                QuickAction("More", Icons.Outlined.MoreHoriz, Modifier.weight(1f), {})
             }
         }
         item {
-            Card(
-                Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.11f)
-                )
-            ) {
+            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.11f))) {
                 Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        modifier = Modifier.size(44.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Outlined.AutoGraph, null, tint = MaterialTheme.colorScheme.secondary)
-                        }
+                    Surface(modifier = Modifier.size(44.dp), shape = CircleShape, color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)) {
+                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Outlined.AutoGraph, null, tint = MaterialTheme.colorScheme.secondary) }
                     }
                     Column(Modifier.padding(start = 14.dp)) {
                         Text("Your financial layer is coming", fontWeight = FontWeight.Bold)
-                        Text(
-                            "Payments, collections, payouts and business tools will connect here.",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.62f)
-                        )
+                        Text("Payments, collections, payouts and business tools will connect here.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.62f))
                     }
                 }
             }
         }
         item {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Recent activity", fontSize = 19.sp, fontWeight = FontWeight.Bold)
                 TextButton(onClick = {}) { Text("See all") }
             }
@@ -417,14 +387,10 @@ private fun HomeScreen(modifier: Modifier = Modifier) {
 private fun QuickAction(
     label: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    modifier: Modifier
+    modifier: Modifier,
+    onClick: () -> Unit
 ) {
-    OutlinedButton(
-        onClick = {},
-        modifier = modifier.height(82.dp),
-        shape = RoundedCornerShape(18.dp),
-        contentPadding = PaddingValues(4.dp)
-    ) {
+    OutlinedButton(onClick = onClick, modifier = modifier.height(82.dp), shape = RoundedCornerShape(18.dp), contentPadding = PaddingValues(4.dp)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(icon, null, Modifier.size(20.dp))
             Spacer(Modifier.height(5.dp))
@@ -608,6 +574,174 @@ private fun TransactionRow(t: Transaction) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PaymentFlowScreen(
+    flow: PaymentFlow,
+    onClose: () -> Unit
+) {
+    var step by rememberSaveable { mutableStateOf(PaymentStep.Recipient) }
+    var recipient by rememberSaveable { mutableStateOf("") }
+    var amount by rememberSaveable { mutableStateOf("") }
+    var note by rememberSaveable { mutableStateOf("") }
+
+    val title = when (flow) {
+        PaymentFlow.Send -> "Send money"
+        PaymentFlow.Request -> "Request money"
+        PaymentFlow.Pay -> "Pay"
+    }
+    val recipientLabel = when (flow) {
+        PaymentFlow.Send -> "Recipient phone or email"
+        PaymentFlow.Request -> "Request from phone or email"
+        PaymentFlow.Pay -> "Merchant or payment reference"
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(title, fontWeight = FontWeight.ExtraBold) },
+                navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Outlined.ArrowBack, "Back") } },
+                actions = { Text("TEST", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(end = 16.dp)) }
+            )
+        }
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text(
+                when (step) {
+                    PaymentStep.Recipient -> "Who are you paying?"
+                    PaymentStep.Amount -> "How much?"
+                    PaymentStep.Review -> "Review payment"
+                    PaymentStep.Processing -> "Processing"
+                    PaymentStep.Result -> if (flow == PaymentFlow.Request) "Request created" else "Payment complete"
+                },
+                fontSize = 28.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Text(
+                when (step) {
+                    PaymentStep.Recipient -> "This is a frontend test flow. No real funds will move."
+                    PaymentStep.Amount -> "Enter an amount for this test transaction."
+                    PaymentStep.Review -> "Confirm the details before the simulated transaction runs."
+                    PaymentStep.Processing -> "Ignite Pay is simulating the payment lifecycle."
+                    PaymentStep.Result -> "This is a successful test result only."
+                },
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.62f)
+            )
+
+            when (step) {
+                PaymentStep.Recipient -> {
+                    OutlinedTextField(
+                        value = recipient,
+                        onValueChange = { recipient = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(recipientLabel) },
+                        leadingIcon = { Icon(Icons.Outlined.Person, null) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Button(
+                        onClick = { step = PaymentStep.Amount },
+                        enabled = recipient.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Text("Continue", fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.width(8.dp))
+                        Icon(Icons.Outlined.ArrowForward, null)
+                    }
+                }
+                PaymentStep.Amount -> {
+                    OutlinedTextField(
+                        value = amount,
+                        onValueChange = { if (it.all(Char::isDigit) && it.length <= 9) amount = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Amount in KES") },
+                        leadingIcon = { Text("KES") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    OutlinedTextField(
+                        value = note,
+                        onValueChange = { note = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Note (optional)") },
+                        leadingIcon = { Icon(Icons.Outlined.Notes, null) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Button(
+                        onClick = { step = PaymentStep.Review },
+                        enabled = amount.toLongOrNull()?.let { it > 0 } == true,
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(18.dp)
+                    ) { Text("Review", fontWeight = FontWeight.Bold) }
+                }
+                PaymentStep.Review -> {
+                    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp)) {
+                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                            PaymentSummaryRow("Recipient", recipient)
+                            PaymentSummaryRow("Amount", "KES " + amount.ifBlank { "0" })
+                            if (note.isNotBlank()) PaymentSummaryRow("Note", note)
+                            PaymentSummaryRow("Environment", "TEST MODE")
+                        }
+                    }
+                    Spacer(Modifier.weight(1f))
+                    Button(
+                        onClick = { step = PaymentStep.Processing },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Icon(Icons.Outlined.Lock, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (flow == PaymentFlow.Request) "Create test request" else "Confirm test payment", fontWeight = FontWeight.Bold)
+                    }
+                }
+                PaymentStep.Processing -> {
+                    Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator()
+                            Spacer(Modifier.height(18.dp))
+                            Text("Securely processing…", fontWeight = FontWeight.Bold)
+                            Text("No real transaction is being submitted.", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.58f), fontSize = 12.sp)
+                        }
+                    }
+                    LaunchedEffect(Unit) {
+                        kotlinx.coroutines.delay(900)
+                        step = PaymentStep.Result
+                    }
+                }
+                PaymentStep.Result -> {
+                    Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Surface(Modifier.size(72.dp), shape = CircleShape, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Outlined.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(38.dp))
+                                }
+                            }
+                            Spacer(Modifier.height(18.dp))
+                            Text(if (flow == PaymentFlow.Request) "Request created" else "Test payment successful", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+                            Spacer(Modifier.height(8.dp))
+                            Text("Reference: IGN-" + amount.ifBlank { "000" } + "-TEST", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.62f))
+                        }
+                    }
+                    Button(onClick = onClose, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(18.dp)) {
+                        Text("Back to Ignite Pay", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PaymentSummaryRow(label: String, value: String) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.58f))
+        Text(value, fontWeight = FontWeight.Bold)
     }
 }
 
