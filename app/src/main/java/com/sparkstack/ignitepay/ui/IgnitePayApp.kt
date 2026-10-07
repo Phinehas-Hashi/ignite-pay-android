@@ -19,14 +19,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.sparkstack.ignitepay.ui.security.SecurityDestination
+import com.sparkstack.ignitepay.ui.security.SecurityScreen
 
 private enum class AppStage { Welcome, Login, SignUp, Home }
 
 private enum class PaymentFlow { Send, Request, Pay }
 
 private enum class PaymentStep { Recipient, Amount, Review, Processing, Result }
-
-private enum class SecurityDestination { Hub, PinSetup, PinConfirm, PinEntry, PinLocked, Biometrics, Devices, Activity, ForgotPin, SessionExpired }
 
 private data class Transaction(
     val title: String,
@@ -263,6 +263,14 @@ private fun AuthScreen(
 private fun MainShell(onSignOut: () -> Unit) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var activeFlow by rememberSaveable { mutableStateOf<PaymentFlow?>(null) }
+    var activeSecurity by remember { mutableStateOf<SecurityDestination?>(null) }
+    var demoPin by remember { mutableStateOf<String?>(null) }
+    var signOutRequested by remember { mutableStateOf(false) }
+
+    if (activeSecurity != null) {
+        SecurityScreen(destination = activeSecurity!!, demoPinConfigured = demoPin != null, onNavigate = { activeSecurity = it }, onPinConfigured = { demoPin = it; activeSecurity = SecurityDestination.Hub }, onSignOut = onSignOut, onClose = { activeSecurity = null })
+        return
+    }
 
     if (activeFlow != null) {
         PaymentFlowScreen(flow = activeFlow!!, onClose = { activeFlow = null })
@@ -280,7 +288,7 @@ private fun MainShell(onSignOut: () -> Unit) {
                 },
                 actions = {
                     IconButton(onClick = {}) { Icon(Icons.Outlined.NotificationsNone, "Notifications") }
-                    IconButton(onClick = {}) { Icon(Icons.Outlined.Security, "Security") }
+                    IconButton(onClick = { activeSecurity = SecurityDestination.Hub }) { Icon(Icons.Outlined.Security, "Security") }
                 }
             )
         },
@@ -313,10 +321,21 @@ private fun MainShell(onSignOut: () -> Unit) {
             )
             1 -> TransactionsScreen(Modifier.padding(padding))
             2 -> WalletScreen(Modifier.padding(padding))
-            else -> ProfileScreen(Modifier.padding(padding), onSignOut)
+            else -> ProfileScreen(Modifier.padding(padding), onSecurity = { activeSecurity = SecurityDestination.Hub }, onSignOut = { signOutRequested = true })
         }
     }
 }
+
+    if (signOutRequested) {
+        AlertDialog(
+            onDismissRequest = { signOutRequested = false },
+            icon = { Icon(Icons.Outlined.Logout, contentDescription = null) },
+            title = { Text("Sign out of test session?") },
+            text = { Text("This only ends the current frontend test session. No financial account or live session is affected.") },
+            confirmButton = { Button(onClick = { signOutRequested = false; onSignOut() }) { Text("Sign out") } },
+            dismissButton = { TextButton(onClick = { signOutRequested = false }) { Text("Cancel") } }
+        )
+    }
 
 @Composable
 private fun HomeScreen(
@@ -504,7 +523,7 @@ private fun WalletScreen(modifier: Modifier = Modifier) {
 @Composable
 private fun WalletOption(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     OutlinedButton(
-        onClick = {},
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth().height(58.dp),
         shape = RoundedCornerShape(16.dp),
         contentPadding = PaddingValues(horizontal = 16.dp)
@@ -516,7 +535,7 @@ private fun WalletOption(label: String, icon: androidx.compose.ui.graphics.vecto
 }
 
 @Composable
-private fun ProfileScreen(modifier: Modifier = Modifier, onSignOut: () -> Unit) {
+private fun ProfileScreen(modifier: Modifier = Modifier, onSecurity: () -> Unit, onSignOut: () -> Unit) {
     LazyColumn(
         modifier.fillMaxSize().padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -529,9 +548,9 @@ private fun ProfileScreen(modifier: Modifier = Modifier, onSignOut: () -> Unit) 
             )
         }
         item { ProfileOption("Personal details", Icons.Outlined.Badge) }
-        item { ProfileOption("PIN & biometrics", Icons.Outlined.Fingerprint) }
-        item { ProfileOption("Trusted devices", Icons.Outlined.Devices) }
-        item { ProfileOption("Security activity", Icons.Outlined.Security) }
+        item { ProfileOption("PIN & biometrics", Icons.Outlined.Fingerprint, onSecurity) }
+        item { ProfileOption("Trusted devices", Icons.Outlined.Devices, onSecurity) }
+        item { ProfileOption("Security activity", Icons.Outlined.Security, onSecurity) }
         item { ProfileOption("Notifications", Icons.Outlined.NotificationsNone) }
         item {
             OutlinedButton(
@@ -548,7 +567,7 @@ private fun ProfileScreen(modifier: Modifier = Modifier, onSignOut: () -> Unit) 
 }
 
 @Composable
-private fun ProfileOption(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+private fun ProfileOption(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit = {}) {
     OutlinedButton(
         onClick = {},
         modifier = Modifier.fillMaxWidth().height(58.dp),
