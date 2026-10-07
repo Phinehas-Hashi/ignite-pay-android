@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.sparkstack.ignitepay.ui.security
 
 import androidx.compose.foundation.layout.*
@@ -74,12 +76,13 @@ fun SecurityScreen(
         when (destination) {
             SecurityDestination.Hub -> SecurityHub(
                 modifier = Modifier.padding(padding),
-                pinConfigured = demoPinConfigured,
+                pinConfigured = demoPin != null,
                 onPin = { onNavigate(if (demoPin != null) SecurityDestination.PinEntry else SecurityDestination.PinSetup) },
                 onBiometrics = { onNavigate(SecurityDestination.Biometrics) },
                 onDevices = { onNavigate(SecurityDestination.Devices) },
                 onActivity = { onNavigate(SecurityDestination.Activity) },
                 onForgot = { onNavigate(SecurityDestination.ForgotPin) },
+                onChangePin = { onNavigate(SecurityDestination.ChangePin) },
                 onSessionExpired = { onNavigate(SecurityDestination.SessionExpired) }
             )
             SecurityDestination.PinSetup -> SecurityPinEntry(
@@ -226,6 +229,7 @@ private fun SecurityHub(
     onDevices: () -> Unit,
     onActivity: () -> Unit,
     onForgot: () -> Unit,
+    onChangePin: () -> Unit,
     onSessionExpired: () -> Unit
 ) {
     LazyColumn(modifier.fillMaxSize().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -246,7 +250,7 @@ private fun SecurityHub(
             }
         }
         item { SecurityOption("PIN", if (pinConfigured) "Configured for this test session" else "Not configured", Icons.Outlined.Pin, onPin) }
-        if (pinConfigured) item { SecurityOption("Change PIN", "Verify the current test PIN first", Icons.Outlined.Edit, { onNavigate(SecurityDestination.ChangePin) }) }
+        if (pinConfigured) item { SecurityOption("Change PIN", "Verify the current test PIN first", Icons.Outlined.Edit, onChangePin) }
         item { SecurityOption("Biometric unlock", "Ready for a future device-backed implementation", Icons.Outlined.Fingerprint, onBiometrics) }
         item { SecurityOption("Trusted devices", "Review device trust state", Icons.Outlined.Devices, onDevices) }
         item { SecurityOption("Security activity", "Authentication and device events", Icons.Outlined.Security, onActivity) }
