@@ -268,7 +268,7 @@ private fun MainShell(onSignOut: () -> Unit) {
     var signOutRequested by remember { mutableStateOf(false) }
 
     if (activeSecurity != null) {
-        SecurityScreen(destination = activeSecurity!!, demoPinConfigured = demoPin != null, onNavigate = { activeSecurity = it }, onPinConfigured = { demoPin = it; activeSecurity = SecurityDestination.Hub }, onSignOut = onSignOut, onClose = { activeSecurity = null })
+        SecurityScreen(destination = activeSecurity!!, demoPin = demoPin, onNavigate = { activeSecurity = it }, onPinConfigured = { demoPin = it; activeSecurity = SecurityDestination.Hub }, onSignOut = onSignOut, onClose = { activeSecurity = null })
         return
     }
 
