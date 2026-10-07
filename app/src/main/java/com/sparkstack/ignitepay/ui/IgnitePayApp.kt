@@ -112,8 +112,7 @@ private fun WelcomeScreen(onGetStarted: () -> Unit, onLogin: () -> Unit) {
                     )
                 )
                 Text(
-                    "Move money.
-Build opportunity.",
+                    "Move money.\nBuild opportunity.",
                     fontSize = 42.sp,
                     lineHeight = 46.sp,
                     fontWeight = FontWeight.ExtraBold
