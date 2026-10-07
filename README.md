@@ -2,7 +2,7 @@
 
 Standalone Android payments app for the Spark Stack International ecosystem.
 
-## Current milestone: 0.4.0
+## Current milestone: 0.5.0
 
 The first frontend foundation is intentionally test-only: it contains no real payment processing and displays no fabricated real balance.
 
@@ -39,3 +39,15 @@ Real authentication, wallet balances, payment providers, ledgering, webhooks and
 - Added explicit pending demo ledger activity in test mode.
 - Home “See all” now opens the Transactions tab.
 - No real funds or live payment processing are enabled.
+
+
+### 0.5.0 security foundation
+- Added test-mode PIN setup, confirmation and in-memory PIN verification.
+- Added incorrect-PIN and temporary-lock states.
+- Added PIN recovery placeholder.
+- Added biometric-ready security UI without reading or storing biometric credentials.
+- Added trusted devices and security activity preview surfaces.
+- Added simulated session-expired state.
+- Added sign-out confirmation for the frontend test session.
+- Security state is intentionally not persisted as plaintext credentials.
+- No real authentication, biometric unlock, financial access or live transactions are enabled.
