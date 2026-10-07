@@ -2,7 +2,7 @@
 
 Standalone Android payments app for the Spark Stack International ecosystem.
 
-## Current milestone: 0.2.0
+## Current milestone: 0.3.0
 
 The first frontend foundation is intentionally test-only: it contains no real payment processing and displays no fabricated real balance.
 
@@ -14,12 +14,20 @@ Included:
 - Wallet
 - Profile and security entry point
 - Explicit TEST MODE state
+- Send money frontend flow
+- Request money frontend flow
+- Pay / merchant frontend flow
+- Review, processing, success and test-reference states
 
 ## Target architecture
 
 Android App → Ignite Pay API → Spark Core → Payment providers → Ledger / reconciliation / webhooks
 
 The Android app will remain independent from the backend so payment infrastructure can evolve safely.
+
+## Test-mode payment flows
+
+The 0.3.0 payment journeys are UI simulations only. They do not authenticate users, debit wallets, call payment providers, or create real ledger entries.
 
 ## Build
 
